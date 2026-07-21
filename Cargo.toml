@@ -1,12 +1,22 @@
 [package]
-name = "papi-bindings"
-version = "0.5.3"
-authors = ["Eric Holk <eric.holk@gmail.com>", "Andrea Cracco <guilucand@gmail.com>"]
+name = "papi-wrap"
+version = "0.5.4"
+authors = ["Eric Holk <eric.holk@gmail.com>", "Andrea Cracco <guilucand@gmail.com>", "Youssef El Faqir <youssef.el@bull.com>"]
 edition = "2018"
-categories = []
+categories = ["api-bindings"]
+keywords = ["papi", "hpc", "performance", "counters"]
 description = "Rust PAPI bindings"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/Guilucand/papi-bindings-rs"
+repository = "https://github.com/A924404/papi-bindings-rs"
+homepage = "https://github.com/A924404/papi-bindings-rs"
+documentation = "https://docs.rs/papi-wrap"
+readme = "README.md"
+exclude = [
+	".travis/**",
+	".travis.yml",
+	".git/**",
+	"target/**",
+]
 
 [dependencies]
 libc = "0.2.155"
