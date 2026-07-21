@@ -22,6 +22,34 @@ fn papi_version_number(maj: u32, min: u32, rev: u32, inc: u32) -> u32 {
     (maj << 24) | (min << 16) | (rev << 8) | inc
 }
 
+fn current_papi_version() -> Result<c_int, PapiError> {
+    let output = Command::new("papi_version")
+        .output()
+        .map_err(|_| PapiError { code: PAPI_ESYS })?;
+
+    if !output.status.success() {
+        return Err(PapiError { code: PAPI_ESYS });
+    }
+
+    let cur_version = std::str::from_utf8(&output.stdout)
+        .map_err(|_| PapiError { code: PAPI_EINVAL })?;
+
+    let mut digits = cur_version
+        .trim()
+        .split_whitespace()
+        .last()
+        .ok_or(PapiError { code: PAPI_EINVAL })?
+        .split('.')
+        .map(|d| d.parse::<u32>().map_err(|_| PapiError { code: PAPI_EINVAL }));
+
+    let maj = digits.next().ok_or(PapiError { code: PAPI_EINVAL })??;
+    let min = digits.next().ok_or(PapiError { code: PAPI_EINVAL })??;
+    let rev = digits.next().ok_or(PapiError { code: PAPI_EINVAL })??;
+    let inc = digits.next().ok_or(PapiError { code: PAPI_EINVAL })??;
+
+    Ok((papi_version_number(maj, min, rev, inc) & 0xffff0000) as c_int)
+}
+
 #[link(name = "papi")]
 extern "C" {}
 
@@ -61,24 +89,9 @@ extern "C" fn get_thread_id() -> c_ulong {
 }
 
 pub fn initialize(multithread: bool) -> Result<(), PapiError> {
+    let cur_version = current_papi_version()?;
+
     unsafe {
-        let cur_version = Command::new("papi_version")
-            .output()
-            .expect("papi_version not found")
-            .stdout;
-        let cur_version = String::from_utf8(cur_version).unwrap();
-        let mut digits = cur_version
-            .trim()
-            .split(' ')
-            .last()
-            .unwrap()
-            .split('.')
-            .map(|d| d.parse::<u32>().unwrap());
-        let maj = digits.next().unwrap();
-        let min = digits.next().unwrap();
-        let rev = digits.next().unwrap();
-        let inc = digits.next().unwrap();
-        let cur_version = (papi_version_number(maj, min, rev, inc) & 0xffff0000) as c_int;
         let version = PAPI_library_init(cur_version);
         if version != cur_version {
             return Err(PapiError { code: version });
